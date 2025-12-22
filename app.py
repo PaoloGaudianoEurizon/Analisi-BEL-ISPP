@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
 
 # =====================================================
 # CONFIG STREAMLIT
@@ -31,10 +30,11 @@ VAR_ROWS = [
     "Δ Stress Up"
 ]
 
+
 # =====================================================
 # FILE
 # =====================================================
-file_name = "data/summary.xlsx"
+file_name = "summary.xlsx"
 
 # =====================================================
 # FUNZIONI DI CARICAMENTO
@@ -71,6 +71,18 @@ def load_bel_tables():
         df.columns = df.iloc[1]
         df = df.iloc[2:]
         df = df.set_index(df.columns[0])
+
+        # 🔧 NORMALIZZAZIONE DEFINITIVA DELLE ETICHETTE
+      #  df.index = (
+      #      df.index.astype(str)
+      #      .str.replace("Var.", "Δ", regex=False)
+      #      .str.replace("Var", "Δ", regex=False)
+      #      .str.replace("Δ%", "Δ", regex=False)
+      #      .str.replace("%", "", regex=False)
+      #      .str.replace(r"\s+", " ", regex=True)
+      #     .str.strip()
+       # )
+
         df = df.apply(pd.to_numeric, errors="coerce")
         return df
 
@@ -81,6 +93,7 @@ def load_bel_tables():
     table_3 = prepare_table(tables[2])  # % Trend BEL
 
     return table_1, table_2, table_3
+
 
 @st.cache_data
 def load_alm():
@@ -102,7 +115,7 @@ def load_alm():
     return df
 
 # =====================================================
-# FUNZIONE PLOT PLOTLY
+# FUNZIONE PLOT
 # =====================================================
 def plot_interactive(
     df,
@@ -176,9 +189,10 @@ grafico = st.selectbox(
 st.divider()
 
 # =====================================================
-# GRAFICI STREAMLIT
+# GRAFICI
 # =====================================================
 if grafico == "BEL":
+    # Seleziona solo le righe disponibili
     rows = [r for r in BEL_ROWS if r in table_1.index]
     selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
@@ -192,6 +206,7 @@ if grafico == "BEL":
         )
 
 elif grafico == "Monetary Trend BEL":
+    # Solo righe effettivamente presenti in table_2
     rows = [r for r in VAR_ROWS if r in table_2.index]
     selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
@@ -205,6 +220,7 @@ elif grafico == "Monetary Trend BEL":
         )
 
 elif grafico == "% Trend BEL":
+    # Solo righe effettivamente presenti in table_3
     rows = [r for r in VAR_ROWS if r in table_3.index]
     selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
@@ -230,11 +246,13 @@ elif grafico == "Duration Trend":
         surplus_asset_pct = last_row["Surplus Asset %"]
         duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
 
+    
         duration_asset_current = last_row["Duration Asset"]
         if st.button("Ottimizzazione Duration Asset"):
             st.info(
                 f"Valore ottimale che annulla il mismatch all'ultimo mese di riferimento: "
-                f"**{duration_asset_opt:.2f}** (rispetto al dato attuale di **{duration_asset_current:.2f}**)")
+                f"**{duration_asset_opt:.2f}** (rispetto al dato attuale di **{duration_asset_current:.2f}**)"
+            )
 
     if cols:
         plot_interactive(
@@ -242,4 +260,3 @@ elif grafico == "Duration Trend":
             cols,
             "Duration Trend"
         )
-
