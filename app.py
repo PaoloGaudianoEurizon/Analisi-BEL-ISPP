@@ -34,7 +34,7 @@ VAR_ROWS = [
 # =====================================================
 # FILE
 # =====================================================
-file_name = "summary.xlsx"
+file_name = "Summary.xlsx"
 
 # =====================================================
 # FUNZIONI DI CARICAMENTO
@@ -260,3 +260,4 @@ elif grafico == "Duration Trend":
             cols,
             "Duration Trend"
         )
+
