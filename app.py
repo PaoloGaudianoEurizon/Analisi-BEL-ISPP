@@ -82,7 +82,12 @@ df_alm = load_alm()
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
     df_plot["Data"] = df_plot.index
-    df_long = df_plot.melt(id_vars="Data", var_name="Grandezza", value_name="Valore")
+
+    df_long = df_plot.melt(
+        id_vars="Data",
+        var_name="Grandezza",
+        value_name="Valore"
+    )
 
     fig = px.line(
         df_long,
@@ -97,13 +102,14 @@ def plot_interactive(df, selected, title, select_rows=False):
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# GRAFICO 1 - BEL
+# GRAFICO 1 - BEL (STESSO APPROCCIO ALM)
 # =====================================================
 st.subheader("📌 BEL")
 
 rows = [r for r in BEL_ROWS if r in table_1.index]
 selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
+# Provo a interpretare le colonne come date
 dates = pd.to_datetime(table_1.columns, errors="coerce").dropna()
 
 if not dates.empty:
@@ -114,7 +120,8 @@ if not dates.empty:
 
     cols = [
         c for c in table_1.columns
-        if start <= pd.to_datetime(c, errors="coerce").date() <= end
+        if pd.notna(pd.to_datetime(c, errors="coerce"))
+        and start <= pd.to_datetime(c).date() <= end
     ]
 else:
     cols = table_1.columns
@@ -123,7 +130,7 @@ if selected:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
 
 # =====================================================
-# GRAFICO 2 - TREND BEL
+# GRAFICO 2 - TREND BEL (SENZA PERIODO)
 # =====================================================
 st.divider()
 st.subheader("📌 Trend BEL")
@@ -134,29 +141,21 @@ trend_type = st.selectbox(
 )
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
+
 rows = [r for r in VAR_ROWS if r in df_trend.index]
-selected = st.multiselect("Seleziona le grandezze", rows, default=rows, key="trend_rows")
+selected = st.multiselect(
+    "Seleziona le grandezze",
+    rows,
+    default=rows,
+    key="trend_rows"
+)
 
-dates = pd.to_datetime(df_trend.columns, errors="coerce").dropna()
-
-if not dates.empty:
-    st.markdown("**Seleziona il periodo di riferimento**")
-    c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", dates.min().date(), key="trend_start")
-    end = c2.date_input("Data finale", dates.max().date(), key="trend_end")
-
-    cols = [
-        c for c in df_trend.columns
-        if start <= pd.to_datetime(c, errors="coerce").date() <= end
-    ]
-else:
-    cols = df_trend.columns
-
+# NESSUN filtro temporale
 if selected:
-    plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
+    plot_interactive(df_trend, selected, trend_type, select_rows=True)
 
 # =====================================================
-# GRAFICO 3 - ALM
+# GRAFICO 3 - ALM (INVARIATO)
 # =====================================================
 st.divider()
 st.subheader("📌 Analisi ALM – Duration Trend")
@@ -184,4 +183,3 @@ if cols:
         st.info(f"Duration Asset ottimale: **{opt:.2f}**")
 
     plot_interactive(df_alm_f, cols, "Duration Trend")
-
