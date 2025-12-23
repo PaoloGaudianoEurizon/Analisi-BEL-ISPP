@@ -1,9 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import calendar
+import re
+from datetime import date
 
 # =====================================================
-# CONFIG STREAMLIT
+# CONFIG
 # =====================================================
 st.set_page_config(page_title="Analisi BEL & ALM", layout="wide")
 st.title("📊 Analisi BEL e ALM")
@@ -30,6 +33,52 @@ VAR_ROWS = [
 ]
 
 file_name = "Summary.xlsx"
+
+# =====================================================
+# UTILITY
+# =====================================================
+MONTH_MAP = {
+    "jan": 1, "january": 1,
+    "feb": 2, "february": 2,
+    "mar": 3, "march": 3,
+    "apr": 4, "april": 4,
+    "may": 5,
+    "jun": 6, "june": 6,
+    "jul": 7, "july": 7,
+    "aug": 8, "august": 8,
+    "sep": 9, "september": 9,
+    "oct": 10, "october": 10,
+    "nov": 11, "november": 11,
+    "dec": 12, "december": 12,
+}
+
+def parse_month_year(text):
+    """
+    Esempi gestiti:
+    - Jan 25
+    - January 2025
+    """
+    text = str(text).lower()
+    for m in MONTH_MAP:
+        if m in text:
+            year = re.findall(r"\d{2,4}", text)
+            if year:
+                y = int(year[0])
+                if y < 100:
+                    y += 2000
+                month = MONTH_MAP[m]
+                last_day = calendar.monthrange(y, month)[1]
+                return date(y, month, last_day)
+    return None
+
+def extract_periods(col):
+    """
+    Jan '24 vs Feb '25 → (Jan '24, Feb '25)
+    """
+    parts = re.split(r"\s+vs\s+", str(col), flags=re.IGNORECASE)
+    if len(parts) == 2:
+        return parts[0].strip(), parts[1].strip()
+    return None, None
 
 # =====================================================
 # LOAD DATA
@@ -77,7 +126,7 @@ table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT
+# PLOT
 # =====================================================
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
@@ -104,18 +153,16 @@ st.subheader("📌 BEL")
 rows = [r for r in BEL_ROWS if r in table_1.index]
 selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
-dates = pd.to_datetime(table_1.columns, errors="coerce").dropna()
+dates = {c: parse_month_year(c) for c in table_1.columns}
+dates = {k: v for k, v in dates.items() if v}
 
-if not dates.empty:
+if dates:
     st.markdown("**Seleziona il periodo di riferimento**")
     c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", dates.min().date(), key="bel_start")
-    end = c2.date_input("Data finale", dates.max().date(), key="bel_end")
+    start = c1.date_input("Data iniziale", min(dates.values()), key="bel_start")
+    end = c2.date_input("Data finale", max(dates.values()), key="bel_end")
 
-    cols = [
-        c for c in table_1.columns
-        if start <= pd.to_datetime(c, errors="coerce").date() <= end
-    ]
+    cols = [c for c, d in dates.items() if start <= d <= end]
 else:
     cols = table_1.columns
 
@@ -137,17 +184,21 @@ df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 rows = [r for r in VAR_ROWS if r in df_trend.index]
 selected = st.multiselect("Seleziona le grandezze", rows, default=rows, key="trend_rows")
 
-dates = pd.to_datetime(df_trend.columns, errors="coerce").dropna()
+periods = [extract_periods(c) for c in df_trend.columns]
+periods = [p for p in periods if p[0] and p[1]]
 
-if not dates.empty:
+if periods:
+    start_periods = sorted(set(p[0] for p in periods))
+    end_periods = sorted(set(p[1] for p in periods))
+
     st.markdown("**Seleziona il periodo di riferimento**")
     c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", dates.min().date(), key="trend_start")
-    end = c2.date_input("Data finale", dates.max().date(), key="trend_end")
+    p_start = c1.selectbox("Periodo iniziale", start_periods)
+    p_end = c2.selectbox("Periodo finale", end_periods)
 
     cols = [
         c for c in df_trend.columns
-        if start <= pd.to_datetime(c, errors="coerce").date() <= end
+        if extract_periods(c) == (p_start, p_end)
     ]
 else:
     cols = df_trend.columns
@@ -156,7 +207,7 @@ if selected:
     plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
 
 # =====================================================
-# GRAFICO 3 - ALM
+# GRAFICO 3 - ALM (NON TOCCATO)
 # =====================================================
 st.divider()
 st.subheader("📌 Analisi ALM")
