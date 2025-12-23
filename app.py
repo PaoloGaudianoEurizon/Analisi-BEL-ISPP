@@ -82,6 +82,7 @@ def load_bel_tables():
 
     return table_1, table_2, table_3
 
+
 @st.cache_data
 def load_alm():
     sheet_name = "Analisi ALM"
@@ -161,24 +162,22 @@ table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# SELEZIONE GRAFICO
+# SEZIONE 1 - ANALISI BEL
 # =====================================================
-grafico = st.selectbox(
-    "📌 Seleziona il grafico",
+st.subheader("📌 Analisi BEL")
+
+grafico_bel = st.selectbox(
+    "Seleziona il grafico BEL",
     [
         "BEL",
         "Monetary Trend BEL",
-        "% Trend BEL",
-        "Duration Trend"
+        "% Trend BEL"
     ]
 )
 
 st.divider()
 
-# =====================================================
-# GRAFICI STREAMLIT
-# =====================================================
-if grafico == "BEL":
+if grafico_bel == "BEL":
     rows = [r for r in BEL_ROWS if r in table_1.index]
     selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
@@ -191,7 +190,7 @@ if grafico == "BEL":
             select_rows=True
         )
 
-elif grafico == "Monetary Trend BEL":
+elif grafico_bel == "Monetary Trend BEL":
     rows = [r for r in VAR_ROWS if r in table_2.index]
     selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
@@ -204,7 +203,7 @@ elif grafico == "Monetary Trend BEL":
             select_rows=True
         )
 
-elif grafico == "% Trend BEL":
+elif grafico_bel == "% Trend BEL":
     rows = [r for r in VAR_ROWS if r in table_3.index]
     selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
@@ -217,28 +216,36 @@ elif grafico == "% Trend BEL":
             select_rows=True
         )
 
-elif grafico == "Duration Trend":
-    cols = st.multiselect(
-        "Seleziona le grandezze",
-        df_alm.columns.tolist(),
-        default=df_alm.columns.tolist()
-    )
-    
-    if cols:
-        last_row = df_alm.iloc[-1]
-        duration_liabilities = last_row["Duration Liabilities"]
-        surplus_asset_pct = last_row["Surplus Asset %"]
-        duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
+# =====================================================
+# SEZIONE 2 - ANALISI ALM
+# =====================================================
+st.divider()
+st.subheader("📌 Analisi ALM – Duration Trend")
 
-        duration_asset_current = last_row["Duration Asset"]
-        if st.button("Ottimizzazione Duration Asset"):
-            st.info(
-                f"Valore ottimale che annulla il mismatch all'ultimo mese di riferimento: "
-                f"**{duration_asset_opt:.2f}** (rispetto al dato attuale di **{duration_asset_current:.2f}**)")
+cols = st.multiselect(
+    "Seleziona le grandezze",
+    df_alm.columns.tolist(),
+    default=df_alm.columns.tolist()
+)
 
-    if cols:
-        plot_interactive(
-            df_alm,
-            cols,
-            "Duration Trend"
+if cols:
+    last_row = df_alm.iloc[-1]
+    duration_liabilities = last_row["Duration Liabilities"]
+    surplus_asset_pct = last_row["Surplus Asset %"]
+    duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
+
+    duration_asset_current = last_row["Duration Asset"]
+
+    if st.button("Ottimizzazione Duration Asset"):
+        st.info(
+            f"Valore ottimale che annulla il mismatch all'ultimo mese di riferimento: "
+            f"**{duration_asset_opt:.2f}** "
+            f"(rispetto al dato attuale di **{duration_asset_current:.2f}**)"
         )
+
+if cols:
+    plot_interactive(
+        df_alm,
+        cols,
+        "Duration Trend"
+    )
