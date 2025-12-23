@@ -34,36 +34,28 @@ VAR_ROWS = [
 
 file_name = "Summary.xlsx"
 
+MONTH_MAP = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4,
+    "may": 5, "jun": 6, "jul": 7, "aug": 8,
+    "sep": 9, "oct": 10, "nov": 11, "dec": 12
+}
+
 # =====================================================
 # UTILITY
 # =====================================================
-MONTH_MAP = {
-    "jan": 1, "january": 1,
-    "feb": 2, "february": 2,
-    "mar": 3, "march": 3,
-    "apr": 4, "april": 4,
-    "may": 5,
-    "jun": 6, "june": 6,
-    "jul": 7, "july": 7,
-    "aug": 8, "august": 8,
-    "sep": 9, "september": 9,
-    "oct": 10, "october": 10,
-    "nov": 11, "november": 11,
-    "dec": 12, "december": 12,
-}
+def end_of_month_from_period(col):
+    """
+    Jan '25 vs Dec '24 → 31/01/2025
+    """
+    match = re.search(r"([A-Za-z]{3})\s*'(\d{2})", col)
+    if not match:
+        return None
 
-def parse_month_year(text):
-    text = str(text).lower()
-    for m, month in MONTH_MAP.items():
-        if m in text:
-            year = re.findall(r"\d{2,4}", text)
-            if year:
-                y = int(year[0])
-                if y < 100:
-                    y += 2000
-                last_day = calendar.monthrange(y, month)[1]
-                return date(y, month, last_day)
-    return None
+    month = MONTH_MAP[match.group(1).lower()]
+    year = 2000 + int(match.group(2))
+    last_day = calendar.monthrange(year, month)[1]
+
+    return date(year, month, last_day)
 
 # =====================================================
 # LOAD DATA
@@ -113,14 +105,19 @@ df_alm = load_alm()
 # =====================================================
 # PLOT
 # =====================================================
-def plot_interactive(df, selected, title, select_rows=False):
-    df_plot = df.loc[selected].T if select_rows else df[selected]
-    df_plot["Data"] = df_plot.index
-    df_long = df_plot.melt(id_vars="Data", var_name="Grandezza", value_name="Valore")
+def plot_interactive(df, selected, title, x_col):
+    df_plot = df.loc[selected].T
+    df_plot[x_col] = df_plot.index
+
+    df_long = df_plot.melt(
+        id_vars=x_col,
+        var_name="Grandezza",
+        value_name="Valore"
+    )
 
     fig = px.line(
         df_long,
-        x="Data",
+        x=x_col,
         y="Valore",
         color="Grandezza",
         markers=True,
@@ -131,28 +128,36 @@ def plot_interactive(df, selected, title, select_rows=False):
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# GRAFICO 1 - BEL (DATE COME ALM)
+# GRAFICO 1 – BEL (DATE COME ALM)
 # =====================================================
 st.subheader("📌 BEL")
 
 rows = [r for r in BEL_ROWS if r in table_1.index]
 selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
-date_map = {c: parse_month_year(c) for c in table_1.columns}
-date_map = {k: v for k, v in date_map.items() if v}
+date_map = {
+    c: end_of_month_from_period(c)
+    for c in table_1.columns
+    if end_of_month_from_period(c)
+}
+
+df_bel = table_1.copy()
+df_bel.columns = [date_map[c] for c in df_bel.columns]
+
+dates = list(df_bel.columns)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", min(date_map.values()), key="bel_start")
-end = c2.date_input("Data finale", max(date_map.values()), key="bel_end")
+start = c1.date_input("Data iniziale", min(dates), key="bel_start")
+end = c2.date_input("Data finale", max(dates), key="bel_end")
 
-cols = [c for c, d in date_map.items() if start <= d <= end]
+df_bel_f = df_bel.loc[:, (df_bel.columns >= start) & (df_bel.columns <= end)]
 
 if selected:
-    plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
+    plot_interactive(df_bel_f, selected, "BEL", "Data")
 
 # =====================================================
-# GRAFICO 2 - TREND BEL (PERIODI VS)
+# GRAFICO 2 – TREND BEL (PERIODI FISSI)
 # =====================================================
 st.divider()
 st.subheader("📌 Trend BEL")
@@ -164,31 +169,36 @@ trend_type = st.selectbox(
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 rows = [r for r in VAR_ROWS if r in df_trend.index]
-selected = st.multiselect("Seleziona le grandezze", rows, default=rows, key="trend_rows")
+selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
-trend_cols = list(df_trend.columns)
+periods = list(df_trend.columns)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-p_start = c1.selectbox("Periodo iniziale", trend_cols, index=0)
-p_end = c2.selectbox("Periodo finale", trend_cols, index=len(trend_cols) - 1)
 
-start_idx = trend_cols.index(p_start)
-end_idx = trend_cols.index(p_end)
+p_start = c1.selectbox(
+    "Periodo iniziale",
+    periods,
+    index=0
+)
 
-if start_idx <= end_idx:
-    cols = trend_cols[start_idx:end_idx + 1]
-else:
-    cols = trend_cols[end_idx:start_idx + 1]
+p_end = c2.selectbox(
+    "Periodo finale",
+    periods,
+    index=len(periods) - 1
+)
+
+i1, i2 = periods.index(p_start), periods.index(p_end)
+cols = periods[min(i1, i2):max(i1, i2) + 1]
 
 if selected:
-    plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
+    plot_interactive(df_trend[cols], selected, trend_type, "Periodo")
 
 # =====================================================
-# GRAFICO 3 - ALM (INVARIATO)
+# GRAFICO 3 – ALM
 # =====================================================
 st.divider()
-st.subheader("📌 Analisi ALM – Duration Trend")
+st.subheader("📌 Analisi ALM")
 
 cols = st.multiselect(
     "Seleziona le grandezze",
@@ -212,4 +222,4 @@ if cols:
     if st.button("Ottimizzazione Duration Asset"):
         st.info(f"Duration Asset ottimale: **{opt:.2f}**")
 
-    plot_interactive(df_alm_f, cols, "Duration Trend")
+    plot_interactive(df_alm_f, cols, "Duration Trend", "Data")
