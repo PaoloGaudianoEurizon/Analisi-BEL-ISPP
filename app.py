@@ -1,5 +1,3 @@
-##NEW1
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -186,3 +184,4 @@ if cols:
         st.info(f"Duration Asset ottimale: **{opt:.2f}**")
 
     plot_interactive(df_alm_f, cols, "Duration Trend")
+
