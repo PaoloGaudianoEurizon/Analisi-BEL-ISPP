@@ -34,28 +34,6 @@ VAR_ROWS = [
 
 file_name = "Summary.xlsx"
 
-MONTH_MAP = {
-    "jan": 1, "feb": 2, "mar": 3, "apr": 4,
-    "may": 5, "jun": 6, "jul": 7, "aug": 8,
-    "sep": 9, "oct": 10, "nov": 11, "dec": 12
-}
-
-# =====================================================
-# UTILITY
-# =====================================================
-def end_of_month_from_period(col):
-    """
-    Jan '25 vs Dec '24 → 31/01/2025
-    """
-    match = re.search(r"([A-Za-z]{3})\s*'(\d{2})", str(col))
-    if not match:
-        return None
-
-    month = MONTH_MAP[match.group(1).lower()]
-    year = 2000 + int(match.group(2))
-    last_day = calendar.monthrange(year, month)[1]
-
-    return date(year, month, last_day)
 
 # =====================================================
 # LOAD DATA
@@ -181,10 +159,10 @@ if selected:
     plot_interactive(df_trend, selected, trend_type, "Periodo")
 
 # =====================================================
-# GRAFICO 3 – ALM (INVARIATO)
+# GRAFICO 3 – ALM
 # =====================================================
 st.divider()
-st.subheader("📌 Analisi ALM – Duration Trend")
+st.subheader("📌 Analisi ALM")
 
 cols = st.multiselect(
     "Seleziona le grandezze",
@@ -209,3 +187,4 @@ if cols:
         st.info(f"Duration Asset ottimale: **{opt:.2f}**")
 
     plot_interactive(df_alm_f, cols, "Duration Trend", "Data")
+
