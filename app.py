@@ -220,7 +220,7 @@ elif grafico_bel == "% Trend BEL":
 # SEZIONE 2 - ANALISI ALM
 # =====================================================
 st.divider()
-st.subheader("📌 Analisi ALM – Duration Trend")
+st.subheader("📌 Analisi ALM")
 
 cols = st.multiselect(
     "Seleziona le grandezze",
@@ -249,3 +249,4 @@ if cols:
         cols,
         "Duration Trend"
     )
+
