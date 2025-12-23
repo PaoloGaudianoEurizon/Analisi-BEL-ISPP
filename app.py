@@ -1,3 +1,5 @@
+##NEW
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -71,7 +73,6 @@ def load_bel_tables():
         df.columns = df.iloc[1]
         df = df.iloc[2:]
         df = df.set_index(df.columns[0])
-        df.columns = pd.to_datetime(df.columns, errors="coerce")
         df = df.apply(pd.to_numeric, errors="coerce")
         return df
 
@@ -119,7 +120,10 @@ def plot_interactive(
     else:
         df_plot = df[selected].copy()
 
-    df_plot["Data"] = df_plot.index.strftime('%d %B %Y')
+    if is_index_datetime:
+        df_plot["Data"] = df_plot.index.strftime('%d %B %Y')
+    else:
+        df_plot["Data"] = df_plot.index
 
     df_long = df_plot.melt(
         id_vars="Data",
@@ -166,41 +170,53 @@ st.subheader("📌 Analisi BEL")
 
 grafico_bel = st.selectbox(
     "Seleziona il grafico BEL",
-    ["BEL", "Monetary Trend BEL", "% Trend BEL"]
+    [
+        "BEL",
+        "Monetary Trend BEL",
+        "% Trend BEL"
+    ]
 )
 
 st.divider()
 
 if grafico_bel == "BEL":
-    df_ref = table_1
-    rows = [r for r in BEL_ROWS if r in df_ref.index]
+    rows = [r for r in BEL_ROWS if r in table_1.index]
+    selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
+
+    if selected:
+        plot_interactive(
+            table_1,
+            selected,
+            "BEL",
+            is_index_datetime=False,
+            select_rows=True
+        )
 
 elif grafico_bel == "Monetary Trend BEL":
-    df_ref = table_2
-    rows = [r for r in VAR_ROWS if r in df_ref.index]
+    rows = [r for r in VAR_ROWS if r in table_2.index]
+    selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
-else:
-    df_ref = table_3
-    rows = [r for r in VAR_ROWS if r in df_ref.index]
+    if selected:
+        plot_interactive(
+            table_2,
+            selected,
+            "Monetary Trend BEL",
+            is_index_datetime=False,
+            select_rows=True
+        )
 
-selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
+elif grafico_bel == "% Trend BEL":
+    rows = [r for r in VAR_ROWS if r in table_3.index]
+    selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
-st.markdown("**Seleziona il periodo di riferimento**")
-min_date, max_date = df_ref.columns.min(), df_ref.columns.max()
-
-start_date = st.date_input("Start date", value=min_date)
-end_date = st.date_input("End date", value=max_date)
-
-if selected:
-    df_filtered = df_ref.loc[:, (df_ref.columns >= pd.to_datetime(start_date)) &
-                                  (df_ref.columns <= pd.to_datetime(end_date))]
-
-    plot_interactive(
-        df_filtered,
-        selected,
-        grafico_bel,
-        select_rows=True
-    )
+    if selected:
+        plot_interactive(
+            table_3,
+            selected,
+            "% Trend BEL",
+            is_index_datetime=False,
+            select_rows=True
+        )
 
 # =====================================================
 # SEZIONE 2 - ANALISI ALM
@@ -214,19 +230,8 @@ cols = st.multiselect(
     default=df_alm.columns.tolist()
 )
 
-st.markdown("**Seleziona il periodo di riferimento**")
-min_date_alm, max_date_alm = df_alm.index.min(), df_alm.index.max()
-
-start_date_alm = st.date_input("Start date (ALM)", value=min_date_alm)
-end_date_alm = st.date_input("End date (ALM)", value=max_date_alm)
-
-df_alm_filtered = df_alm.loc[
-    (df_alm.index >= pd.to_datetime(start_date_alm)) &
-    (df_alm.index <= pd.to_datetime(end_date_alm))
-]
-
 if cols:
-    last_row = df_alm_filtered.iloc[-1]
+    last_row = df_alm.iloc[-1]
     duration_liabilities = last_row["Duration Liabilities"]
     surplus_asset_pct = last_row["Surplus Asset %"]
     duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
@@ -242,7 +247,7 @@ if cols:
 
 if cols:
     plot_interactive(
-        df_alm_filtered,
+        df_alm,
         cols,
         "Duration Trend"
     )
