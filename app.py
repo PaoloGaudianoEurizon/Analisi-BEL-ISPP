@@ -47,7 +47,7 @@ def end_of_month_from_period(col):
     """
     Jan '25 vs Dec '24 → 31/01/2025
     """
-    match = re.search(r"([A-Za-z]{3})\s*'(\d{2})", col)
+    match = re.search(r"([A-Za-z]{3})\s*'(\d{2})", str(col))
     if not match:
         return None
 
@@ -105,19 +105,19 @@ df_alm = load_alm()
 # =====================================================
 # PLOT
 # =====================================================
-def plot_interactive(df, selected, title, x_col):
+def plot_interactive(df, selected, title, x_name):
     df_plot = df.loc[selected].T
-    df_plot[x_col] = df_plot.index
+    df_plot[x_name] = df_plot.index
 
     df_long = df_plot.melt(
-        id_vars=x_col,
+        id_vars=x_name,
         var_name="Grandezza",
         value_name="Valore"
     )
 
     fig = px.line(
         df_long,
-        x=x_col,
+        x=x_name,
         y="Valore",
         color="Grandezza",
         markers=True,
@@ -128,7 +128,7 @@ def plot_interactive(df, selected, title, x_col):
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# GRAFICO 1 – BEL (DATE COME ALM)
+# GRAFICO 1 – BEL (CON DATE)
 # =====================================================
 st.subheader("📌 BEL")
 
@@ -148,8 +148,8 @@ dates = list(df_bel.columns)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", min(dates), key="bel_start")
-end = c2.date_input("Data finale", max(dates), key="bel_end")
+start = c1.date_input("Data iniziale", min(dates))
+end = c2.date_input("Data finale", max(dates))
 
 df_bel_f = df_bel.loc[:, (df_bel.columns >= start) & (df_bel.columns <= end)]
 
@@ -157,7 +157,7 @@ if selected:
     plot_interactive(df_bel_f, selected, "BEL", "Data")
 
 # =====================================================
-# GRAFICO 2 – TREND BEL (PERIODI FISSI)
+# GRAFICO 2 – TREND BEL (SENZA PERIODO)
 # =====================================================
 st.divider()
 st.subheader("📌 Trend BEL")
@@ -168,37 +168,23 @@ trend_type = st.selectbox(
 )
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
+
 rows = [r for r in VAR_ROWS if r in df_trend.index]
-selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
-
-periods = list(df_trend.columns)
-
-st.markdown("**Seleziona il periodo di riferimento**")
-c1, c2 = st.columns(2)
-
-p_start = c1.selectbox(
-    "Periodo iniziale",
-    periods,
-    index=0
+selected = st.multiselect(
+    "Seleziona le grandezze",
+    rows,
+    default=rows,
+    key="trend_rows"
 )
-
-p_end = c2.selectbox(
-    "Periodo finale",
-    periods,
-    index=len(periods) - 1
-)
-
-i1, i2 = periods.index(p_start), periods.index(p_end)
-cols = periods[min(i1, i2):max(i1, i2) + 1]
 
 if selected:
-    plot_interactive(df_trend[cols], selected, trend_type, "Periodo")
+    plot_interactive(df_trend, selected, trend_type, "Periodo")
 
 # =====================================================
-# GRAFICO 3 – ALM
+# GRAFICO 3 – ALM (INVARIATO)
 # =====================================================
 st.divider()
-st.subheader("📌 Analisi ALM")
+st.subheader("📌 Analisi ALM – Duration Trend")
 
 cols = st.multiselect(
     "Seleziona le grandezze",
