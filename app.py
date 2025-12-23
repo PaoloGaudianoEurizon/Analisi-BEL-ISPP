@@ -53,32 +53,17 @@ MONTH_MAP = {
 }
 
 def parse_month_year(text):
-    """
-    Esempi gestiti:
-    - Jan 25
-    - January 2025
-    """
     text = str(text).lower()
-    for m in MONTH_MAP:
+    for m, month in MONTH_MAP.items():
         if m in text:
             year = re.findall(r"\d{2,4}", text)
             if year:
                 y = int(year[0])
                 if y < 100:
                     y += 2000
-                month = MONTH_MAP[m]
                 last_day = calendar.monthrange(y, month)[1]
                 return date(y, month, last_day)
     return None
-
-def extract_periods(col):
-    """
-    Jan '24 vs Feb '25 → (Jan '24, Feb '25)
-    """
-    parts = re.split(r"\s+vs\s+", str(col), flags=re.IGNORECASE)
-    if len(parts) == 2:
-        return parts[0].strip(), parts[1].strip()
-    return None, None
 
 # =====================================================
 # LOAD DATA
@@ -146,31 +131,28 @@ def plot_interactive(df, selected, title, select_rows=False):
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# GRAFICO 1 - BEL
+# GRAFICO 1 - BEL (DATE COME ALM)
 # =====================================================
 st.subheader("📌 BEL")
 
 rows = [r for r in BEL_ROWS if r in table_1.index]
 selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
-dates = {c: parse_month_year(c) for c in table_1.columns}
-dates = {k: v for k, v in dates.items() if v}
+date_map = {c: parse_month_year(c) for c in table_1.columns}
+date_map = {k: v for k, v in date_map.items() if v}
 
-if dates:
-    st.markdown("**Seleziona il periodo di riferimento**")
-    c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", min(dates.values()), key="bel_start")
-    end = c2.date_input("Data finale", max(dates.values()), key="bel_end")
+st.markdown("**Seleziona il periodo di riferimento**")
+c1, c2 = st.columns(2)
+start = c1.date_input("Data iniziale", min(date_map.values()), key="bel_start")
+end = c2.date_input("Data finale", max(date_map.values()), key="bel_end")
 
-    cols = [c for c, d in dates.items() if start <= d <= end]
-else:
-    cols = table_1.columns
+cols = [c for c, d in date_map.items() if start <= d <= end]
 
 if selected:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
 
 # =====================================================
-# GRAFICO 2 - TREND BEL
+# GRAFICO 2 - TREND BEL (PERIODI VS)
 # =====================================================
 st.divider()
 st.subheader("📌 Trend BEL")
@@ -184,33 +166,29 @@ df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 rows = [r for r in VAR_ROWS if r in df_trend.index]
 selected = st.multiselect("Seleziona le grandezze", rows, default=rows, key="trend_rows")
 
-periods = [extract_periods(c) for c in df_trend.columns]
-periods = [p for p in periods if p[0] and p[1]]
+trend_cols = list(df_trend.columns)
 
-if periods:
-    start_periods = sorted(set(p[0] for p in periods))
-    end_periods = sorted(set(p[1] for p in periods))
+st.markdown("**Seleziona il periodo di riferimento**")
+c1, c2 = st.columns(2)
+p_start = c1.selectbox("Periodo iniziale", trend_cols, index=0)
+p_end = c2.selectbox("Periodo finale", trend_cols, index=len(trend_cols) - 1)
 
-    st.markdown("**Seleziona il periodo di riferimento**")
-    c1, c2 = st.columns(2)
-    p_start = c1.selectbox("Periodo iniziale", start_periods)
-    p_end = c2.selectbox("Periodo finale", end_periods)
+start_idx = trend_cols.index(p_start)
+end_idx = trend_cols.index(p_end)
 
-    cols = [
-        c for c in df_trend.columns
-        if extract_periods(c) == (p_start, p_end)
-    ]
+if start_idx <= end_idx:
+    cols = trend_cols[start_idx:end_idx + 1]
 else:
-    cols = df_trend.columns
+    cols = trend_cols[end_idx:start_idx + 1]
 
 if selected:
     plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
 
 # =====================================================
-# GRAFICO 3 - ALM (NON TOCCATO)
+# GRAFICO 3 - ALM (INVARIATO)
 # =====================================================
 st.divider()
-st.subheader("📌 Analisi ALM")
+st.subheader("📌 Analisi ALM – Duration Trend")
 
 cols = st.multiselect(
     "Seleziona le grandezze",
