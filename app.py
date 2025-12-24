@@ -43,8 +43,8 @@ def load_bel_tables():
         header=None
     )
 
-    # Date REALI dal file (es. 31/01/2025, 28/02/2025)
-    bel_dates = pd.to_datetime(df_raw.iloc[2], errors="coerce")
+    # Date così come appaiono nel file
+    bel_dates = df_raw.iloc[2].astype(str)
 
     def split_tables(df):
         tables, start = [], None
@@ -78,20 +78,20 @@ def load_alm():
     df = pd.read_excel(file_name, sheet_name="Analisi ALM", usecols="A:E")
     df = df.dropna(how="all")
     df = df.set_index(df.columns[0])
-    df.index = pd.to_datetime(df.index, errors="coerce")
+    df.index = df.index.strftime("%d/%m/%Y")  # converto anche ALM in stringhe
     return df.dropna(how="all")
 
 table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT (DATE REALI SENZA SHIFT)
+# FUNZIONE PLOT (DATE COME STRINGHE)
 # =====================================================
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
 
-    # Date reali dal file
-    df_plot["Data"] = pd.to_datetime(df_plot.index)
+    # Date come stringhe per tick esatti
+    df_plot["Data"] = df_plot.index.astype(str)
 
     df_long = df_plot.melt(
         id_vars="Data",
@@ -101,21 +101,16 @@ def plot_interactive(df, selected, title, select_rows=False):
 
     fig = px.line(
         df_long,
-        x="Data",
+        x="Data",  # stringhe → ogni data diventa un tick
         y="Valore",
         color="Grandezza",
         markers=True,
         title=title
     )
 
-    # Forza solo il formato della data, senza spostamenti
     fig.update_layout(
         hovermode="x unified",
-        xaxis=dict(
-            title="Data",
-            tickformat="%d/%m/%Y",
-            tickangle=0
-        )
+        xaxis=dict(title="Data")
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -132,10 +127,10 @@ dates = table_1.columns.dropna()
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", dates.min().date(), key="bel_start")
-end = c2.date_input("Data finale", dates.max().date(), key="bel_end")
+start = c1.date_input("Data iniziale", pd.to_datetime(dates.min()))
+end = c2.date_input("Data finale", pd.to_datetime(dates.max()))
 
-cols = [c for c in table_1.columns if start <= c.date() <= end]
+cols = [c for c in table_1.columns if start <= pd.to_datetime(c) <= end]
 
 if selected:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
@@ -159,10 +154,10 @@ dates = df_trend.columns.dropna()
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", dates.min().date(), key="trend_start")
-end = c2.date_input("Data finale", dates.max().date(), key="trend_end")
+start = c1.date_input("Data iniziale", pd.to_datetime(dates.min()), key="trend_start")
+end = c2.date_input("Data finale", pd.to_datetime(dates.max()), key="trend_end")
 
-cols = [c for c in df_trend.columns if start <= c.date() <= end]
+cols = [c for c in df_trend.columns if start <= pd.to_datetime(c) <= end]
 
 if selected:
     plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
@@ -180,13 +175,12 @@ cols = st.multiselect(
 )
 
 dates = df_alm.index.dropna()
-
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", dates.min().date(), key="alm_start")
-end = c2.date_input("Data finale", dates.max().date(), key="alm_end")
+start = c1.date_input("Data iniziale", pd.to_datetime(dates.min()), key="alm_start")
+end = c2.date_input("Data finale", pd.to_datetime(dates.max()), key="alm_end")
 
-df_alm_f = df_alm.loc[start:end]
+df_alm_f = df_alm.loc[start.strftime("%d/%m/%Y"):end.strftime("%d/%m/%Y")]
 
 if cols and not df_alm_f.empty:
     plot_interactive(df_alm_f, cols, "Duration Trend")
