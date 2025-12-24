@@ -43,7 +43,7 @@ def load_bel_tables():
         header=None
     )
 
-    # Date REALI dal file (es. 28/02/2025)
+    # Date REALI dal file (es. 31/01/2025, 28/02/2025)
     bel_dates = pd.to_datetime(df_raw.iloc[2], errors="coerce")
 
     def split_tables(df):
@@ -85,11 +85,12 @@ table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT (DATE REALI, NESSUNO SHIFT)
+# FUNZIONE PLOT (DATE REALI SENZA SHIFT)
 # =====================================================
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
 
+    # Date reali dal file
     df_plot["Data"] = pd.to_datetime(df_plot.index)
 
     df_long = df_plot.melt(
@@ -107,12 +108,13 @@ def plot_interactive(df, selected, title, select_rows=False):
         title=title
     )
 
+    # Forza solo il formato della data, senza spostamenti
     fig.update_layout(
         hovermode="x unified",
         xaxis=dict(
             title="Data",
             tickformat="%d/%m/%Y",
-            dtick="M1"
+            tickangle=0
         )
     )
 
