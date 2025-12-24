@@ -159,26 +159,32 @@ else:
 if len(selected_trend) > 0 and len(cols_trend) > 0:
     plot_interactive(df_trend[cols_trend], selected_trend, trend_type, select_rows=True)
 
-
 # =====================================================
-# GRAFICO 3 - ANALISI ALM
+# GRAFICO 3 - ALM
 # =====================================================
 st.divider()
 st.subheader("📌 Analisi ALM")
 
-cols = st.multiselect(
+selected_alm = st.multiselect(
     "Seleziona le grandezze",
     df_alm.columns.tolist(),
     default=df_alm.columns.tolist()
 )
 
-if cols:
-    last_row = df_alm.iloc[-1]
-    duration_liabilities = last_row["Duration Liabilities"]
-    surplus_asset_pct = last_row["Surplus Asset %"]
-    duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
+dates_alm = df_alm.index.dropna()
 
-    duration_asset_current = last_row["Duration Asset"]
+st.markdown("**Seleziona il periodo di riferimento**")
+c1, c2 = st.columns(2)
+start_alm = c1.date_input("Data iniziale", dates_alm.min().date(), key="alm_start")
+end_alm = c2.date_input("Data finale", dates_alm.max().date(), key="alm_end")
+
+df_alm_f = df_alm.loc[start_alm:end_alm]
+
+if len(selected_alm) > 0 and not df_alm_f.empty:
+    last = df_alm_f.iloc[-1]
+
+    duration_asset_current = last.get("Duration Assets", float("nan"))
+    duration_asset_opt = last["Duration Liabilities"] * (1 - last["Surplus Asset %"])
 
     if st.button("Ottimizzazione Duration Asset"):
         st.info(
@@ -187,9 +193,6 @@ if cols:
             f"(rispetto al dato attuale di **{duration_asset_current:.2f}**)"
         )
 
-if cols:
-    plot_interactive(
-        df_alm,
-        cols,
-        "Duration Trend"
-    )
+    plot_interactive(df_alm_f, selected_alm, "Duration Trend")
+
+
