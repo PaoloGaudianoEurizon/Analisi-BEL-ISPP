@@ -43,7 +43,7 @@ def load_bel_tables():
         header=None
     )
 
-    # Date tecniche: fine mese precedente
+    # Date REALI dal file (es. 28/02/2025)
     bel_dates = pd.to_datetime(df_raw.iloc[2], errors="coerce")
 
     def split_tables(df):
@@ -85,28 +85,22 @@ table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT (FIX MESE DI COMPETENZA)
+# FUNZIONE PLOT (DATE REALI, NESSUNO SHIFT)
 # =====================================================
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
 
-    # Data tecnica (es. 28/02/2025)
-    df_plot["Data"] = df_plot.index
-
-    # Periodo di competenza (mese successivo)
-    df_plot["Periodo"] = (
-        df_plot.index + pd.offsets.MonthBegin(1)
-    ).strftime("%b %Y")
+    df_plot["Data"] = pd.to_datetime(df_plot.index)
 
     df_long = df_plot.melt(
-        id_vars=["Data", "Periodo"],
+        id_vars="Data",
         var_name="Grandezza",
         value_name="Valore"
     )
 
     fig = px.line(
         df_long,
-        x="Periodo",          # asse X = mese di competenza
+        x="Data",
         y="Valore",
         color="Grandezza",
         markers=True,
@@ -115,7 +109,11 @@ def plot_interactive(df, selected, title, select_rows=False):
 
     fig.update_layout(
         hovermode="x unified",
-        xaxis_title="Periodo di riferimento"
+        xaxis=dict(
+            title="Data",
+            tickformat="%d/%m/%Y",
+            dtick="M1"
+        )
     )
 
     st.plotly_chart(fig, use_container_width=True)
