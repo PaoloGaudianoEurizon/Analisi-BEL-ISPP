@@ -122,10 +122,12 @@ if not dates.empty:
         if start <= pd.to_datetime(c, errors="coerce").date() <= end
     ]
 else:
-    cols = table_1.columns
+    cols = list(table_1.columns)
 
-if selected and cols:
+if len(selected) > 0 and len(cols) > 0:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
+else:
+    st.warning("Nessun dato disponibile per il periodo selezionato.")
 
 # =====================================================
 # GRAFICO 2 - VARIAZIONE BEL
@@ -189,4 +191,5 @@ if cols:
         st.info(f"Duration Asset ottimale: **{opt:.2f}**")
 
     plot_interactive(df_alm_f, cols, "Duration Trend")
+
 
