@@ -108,9 +108,14 @@ dates = pd.to_datetime(table_1.columns, errors="coerce").dropna()
 
 if not dates.empty:
     st.markdown("**Seleziona il periodo di riferimento**")
-    c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", dates.min().date(), key="bel_start")
-    end = c2.date_input("Data finale", dates.max().date(), key="bel_end")
+
+    start, end = st.date_input(
+        "Intervallo date",
+        value=(dates.min().date(), dates.max().date()),
+        min_value=dates.min().date(),
+        max_value=dates.max().date(),
+        key="bel_date_range"
+    )
 
     cols = [
         c for c in table_1.columns
@@ -119,7 +124,7 @@ if not dates.empty:
 else:
     cols = table_1.columns
 
-if selected:
+if selected and cols:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
 
 # =====================================================
@@ -184,3 +189,4 @@ if cols:
         st.info(f"Duration Asset ottimale: **{opt:.2f}**")
 
     plot_interactive(df_alm_f, cols, "Duration Trend")
+
