@@ -43,7 +43,7 @@ def load_bel_tables():
         header=None
     )
 
-    # === DATE NELLA RIGA 3 (index 2) ===
+    # Date tecniche: fine mese precedente
     bel_dates = pd.to_datetime(df_raw.iloc[2], errors="coerce")
 
     def split_tables(df):
@@ -60,16 +60,9 @@ def load_bel_tables():
 
     def prepare(df, dates):
         df = df.copy().reset_index(drop=True)
-
-        # colonne = date
         df.columns = dates
-
-        # rimuove intestazioni + riga date
         df = df.iloc[3:]
-
-        # prima colonna = nomi grandezze
         df = df.set_index(df.columns[0])
-
         return df.apply(pd.to_numeric, errors="coerce")
 
     t1, t2, t3 = split_tables(df_raw)
@@ -92,27 +85,39 @@ table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT
+# FUNZIONE PLOT (FIX MESE DI COMPETENZA)
 # =====================================================
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
+
+    # Data tecnica (es. 28/02/2025)
     df_plot["Data"] = df_plot.index
+
+    # Periodo di competenza (mese successivo)
+    df_plot["Periodo"] = (
+        df_plot.index + pd.offsets.MonthBegin(1)
+    ).strftime("%b %Y")
+
     df_long = df_plot.melt(
-        id_vars="Data",
+        id_vars=["Data", "Periodo"],
         var_name="Grandezza",
         value_name="Valore"
     )
 
     fig = px.line(
         df_long,
-        x="Data",
+        x="Periodo",          # asse X = mese di competenza
         y="Valore",
         color="Grandezza",
         markers=True,
         title=title
     )
 
-    fig.update_layout(hovermode="x unified")
+    fig.update_layout(
+        hovermode="x unified",
+        xaxis_title="Periodo di riferimento"
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
@@ -121,11 +126,7 @@ def plot_interactive(df, selected, title, select_rows=False):
 st.subheader("📌 BEL")
 
 rows = [r for r in BEL_ROWS if r in table_1.index]
-selected = st.multiselect(
-    "Seleziona le grandezze",
-    rows,
-    default=rows
-)
+selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
 
 dates = table_1.columns.dropna()
 
@@ -152,12 +153,7 @@ trend_type = st.selectbox(
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 rows = [r for r in VAR_ROWS if r in df_trend.index]
-selected = st.multiselect(
-    "Seleziona le grandezze",
-    rows,
-    default=rows,
-    key="trend_rows"
-)
+selected = st.multiselect("Seleziona le grandezze", rows, default=rows, key="trend_rows")
 
 dates = df_trend.columns.dropna()
 
