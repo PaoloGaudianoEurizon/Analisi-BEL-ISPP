@@ -3,13 +3,13 @@ import pandas as pd
 import plotly.express as px
 
 # =====================================================
-# CONFIG STREAMLIT
+# STREAMLIT CONFIG
 # =====================================================
-st.set_page_config(page_title="Analisi BEL & ALM", layout="wide")
-st.title("📊 Analisi BEL e ALM")
+st.set_page_config(page_title="BEL & ALM Analysis", layout="wide")
+st.title("📊 BEL and ALM Analysis")
 
 # =====================================================
-# COSTANTI
+# CONSTANTS
 # =====================================================
 BEL_ROWS = [
     "BEL Undiscounted",
@@ -57,18 +57,13 @@ def load_bel_tables():
 
     def prepare(df):
         df = df.copy().reset_index(drop=True)
-
-        # header della singola tabella
         header = df.iloc[1]
         df = df.iloc[2:]
-
         df.columns = header
         df = df.set_index(df.columns[0])
-
         return df.apply(pd.to_numeric, errors="coerce")
 
     t1, t2, t3 = split_tables(df_raw)
-
     return prepare(t1), prepare(t2), prepare(t3)
 
 @st.cache_data
@@ -78,61 +73,56 @@ def load_alm():
         sheet_name="Analisi ALM",
         usecols="A:E"
     )
-
     df = df.dropna(how="all")
     df = df.set_index(df.columns[0])
-
     return df.apply(pd.to_numeric, errors="coerce")
 
 table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT
+# PLOT FUNCTION
 # =====================================================
 def plot_interactive(df, title):
     df_plot = df.copy()
-    df_plot["Asse"] = df_plot.index
-
+    df_plot["Axis"] = df_plot.index
     df_long = df_plot.melt(
-        id_vars="Asse",
-        var_name="Grandezza",
-        value_name="Valore"
+        id_vars="Axis",
+        var_name="Metric",
+        value_name="Value"
     )
-
     fig = px.line(
         df_long,
-        x="Asse",
-        y="Valore",
-        color="Grandezza",
+        x="Axis",
+        y="Value",
+        color="Metric",
         markers=True,
         title=title
     )
-
     fig.update_layout(hovermode="x unified")
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# GRAFICO 1 - BEL
-# (asse temporale = colonne di table_1)
+# GRAPH 1 - BEL
+# (time axis = columns of table_1)
 # =====================================================
 st.subheader("📌 BEL")
 
 rows = [r for r in BEL_ROWS if r in table_1.index]
 
 selected = st.multiselect(
-    "Seleziona le grandezze",
+    "Select metrics",
     rows,
     default=rows
 )
 
 index_options = list(table_1.columns)
 
-st.markdown("**Seleziona il periodo di riferimento**")
+st.markdown("**Select reference period**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox("Data iniziale", index_options, index=0)
-end = c2.selectbox("Data finale", index_options, index=len(index_options) - 1)
+start = c1.selectbox("Start date", index_options, index=0)
+end = c2.selectbox("End date", index_options, index=len(index_options) - 1)
 
 cols = index_options[
     index_options.index(start): index_options.index(end) + 1
@@ -143,14 +133,14 @@ if selected and cols:
     plot_interactive(df_plot, "BEL")
 
 # =====================================================
-# GRAFICO 2 - VARIAZIONE BEL
-# (asse temporale = colonne di table_2 / table_3)
+# GRAPH 2 - BEL VARIATION
+# (time axis = columns of table_2 / table_3)
 # =====================================================
 st.divider()
-st.subheader("📌 Variazione BEL")
+st.subheader("📌 BEL Variation")
 
 trend_type = st.selectbox(
-    "Seleziona il tipo di trend",
+    "Select trend type",
     ["Monetary Trend BEL", "% Trend BEL"]
 )
 
@@ -159,7 +149,7 @@ df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 rows = [r for r in VAR_ROWS if r in df_trend.index]
 
 selected = st.multiselect(
-    "Seleziona le grandezze",
+    "Select metrics",
     rows,
     default=rows,
     key="trend_rows"
@@ -167,17 +157,17 @@ selected = st.multiselect(
 
 index_options = list(df_trend.columns)
 
-st.markdown("**Seleziona il periodo di riferimento**")
+st.markdown("**Select reference period**")
 c1, c2 = st.columns(2)
 
 start = c1.selectbox(
-    "Data iniziale",
+    "Start date",
     index_options,
     index=0,
     key="trend_start"
 )
 end = c2.selectbox(
-    "Data finale",
+    "End date",
     index_options,
     index=len(index_options) - 1,
     key="trend_end"
@@ -192,30 +182,30 @@ if selected and cols:
     plot_interactive(df_plot, trend_type)
 
 # =====================================================
-# GRAFICO 3 - ALM
+# GRAPH 3 - ALM
 # =====================================================
 st.divider()
-st.subheader("📌 Analisi ALM")
+st.subheader("📌 ALM Analysis")
 
 cols_selected = st.multiselect(
-    "Seleziona le grandezze",
+    "Select metrics",
     df_alm.columns.tolist(),
     default=df_alm.columns.tolist()
 )
 
 alm_index_options = list(df_alm.index)
 
-st.markdown("**Seleziona il periodo di riferimento**")
+st.markdown("**Select reference period**")
 c1, c2 = st.columns(2)
 
 alm_start = c1.selectbox(
-    "Data iniziale",
+    "Start date",
     alm_index_options,
     index=0,
     key="alm_start"
 )
 alm_end = c2.selectbox(
-    "Data finale",
+    "End date",
     alm_index_options,
     index=len(alm_index_options) - 1,
     key="alm_end"
@@ -229,7 +219,7 @@ df_alm_f = df_alm.loc[
 ]
 
 if not df_alm_f.empty:
-    # BLOCCO BOTTONE SPOSTATO PRIMA DEL GRAFICO
+    # BUTTON BLOCK BEFORE THE GRAPH
     row_ref = df_alm.loc[alm_end]
 
     duration_liabilities = row_ref["Duration Liabilities"]
@@ -240,15 +230,11 @@ if not df_alm_f.empty:
 
     st.divider()
 
-    if st.button("Ottimizzazione Duration Asset"):
+    if st.button("Optimize Asset Duration"):
         st.info(
-            f"Valore ottimale 11 di Duration Asset che annulla il mismatch "
-            f"alla data **{alm_end}**:\n"
-            f"**{duration_asset_opt:.2f}y** (rispetto al valore realizzato di: **{duration_asset_current:.2f}y**)"
+            f"Optimal Asset Duration to eliminate mismatch on **{alm_end}**:\n"
+            f"**{duration_asset_opt:.2f}y** (current: **{duration_asset_current:.2f}y**)"
         )
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
-
-
-
