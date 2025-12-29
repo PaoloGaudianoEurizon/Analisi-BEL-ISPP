@@ -232,10 +232,11 @@ if not df_alm_f.empty:
 
     if st.button("Optimize Asset Duration"):
         st.info(
-            f"Optimal Asset Duration 111 to eliminate mismatch on **{alm_end}**:\n"
+            f"Optimal Asset Duration to eliminate mismatch on **{alm_end}**:\n"
             f"**{duration_asset_opt:.2f}y** (current: **{duration_asset_current:.2f}y**)"
         )
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
 
+A = 1
