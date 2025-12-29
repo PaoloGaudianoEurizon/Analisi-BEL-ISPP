@@ -43,7 +43,6 @@ def load_bel_tables():
         header=None
     )
 
-    # MANTIENE LE COLONNE ESATTAMENTE COME NELL'EXCEL
     bel_cols = df_raw.iloc[2]
 
     def split_tables(df):
@@ -62,16 +61,13 @@ def load_bel_tables():
         df = df.copy().reset_index(drop=True)
         df.columns = cols
         df = df.iloc[3:]
-        df = df.set_index(df.columns[0])
-        return df.apply(pd.to_numeric, errors="coerce")
+        df = df.set_index(df.columns[0])  # indice = date/periodi Excel
+        df = df.apply(pd.to_numeric, errors="coerce")
+        return df
 
     t1, t2, t3 = split_tables(df_raw)
 
-    return (
-        prepare(t1, bel_cols),
-        prepare(t2, bel_cols),
-        prepare(t3, bel_cols)
-    )
+    return prepare(t1, bel_cols), prepare(t2, bel_cols), prepare(t3, bel_cols)
 
 @st.cache_data
 def load_alm():
@@ -81,17 +77,17 @@ def load_alm():
         usecols="A:E"
     )
     df = df.dropna(how="all")
-    df = df.set_index(df.columns[0])  # INDICE COME DA EXCEL
-    return df.dropna(how="all")
+    df = df.set_index(df.columns[0])
+    return df.apply(pd.to_numeric, errors="coerce")
 
 table_1, table_2, table_3 = load_bel_tables()
 df_alm = load_alm()
 
 # =====================================================
-# FUNZIONE PLOT
+# FUNZIONE PLOT UNIFICATA
 # =====================================================
-def plot_interactive(df, selected, title, select_rows=False):
-    df_plot = df.loc[selected].T if select_rows else df[selected]
+def plot_interactive(df, cols, title):
+    df_plot = df[cols].copy()
     df_plot["Asse"] = df_plot.index
 
     df_long = df_plot.melt(
@@ -117,37 +113,28 @@ def plot_interactive(df, selected, title, select_rows=False):
 # =====================================================
 st.subheader("📌 BEL")
 
-rows = [r for r in BEL_ROWS if r in table_1.index]
-selected = st.multiselect(
+cols_available = [c for c in BEL_ROWS if c in table_1.columns]
+
+cols_selected = st.multiselect(
     "Seleziona le grandezze",
-    rows,
-    default=rows
+    cols_available,
+    default=cols_available
 )
 
-date_options = list(table_1.columns)
+index_options = list(table_1.index)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox(
-    "Data iniziale",
-    date_options,
-    index=0
-)
+start = c1.selectbox("Data iniziale", index_options, index=0)
+end = c2.selectbox("Data finale", index_options, index=len(index_options) - 1)
 
-end = c2.selectbox(
-    "Data finale",
-    date_options,
-    index=len(date_options) - 1
-)
-
-cols = [
-    c for c in date_options
-    if date_options.index(start) <= date_options.index(c) <= date_options.index(end)
+df_filt = table_1.loc[
+    index_options[index_options.index(start): index_options.index(end) + 1]
 ]
 
-if selected and cols:
-    plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
+if cols_selected and not df_filt.empty:
+    plot_interactive(df_filt, cols_selected, "BEL")
 
 # =====================================================
 # GRAFICO 2 - VARIAZIONE BEL
@@ -162,40 +149,34 @@ trend_type = st.selectbox(
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 
-rows = [r for r in VAR_ROWS if r in df_trend.index]
-selected = st.multiselect(
+cols_available = [c for c in VAR_ROWS if c in df_trend.columns]
+
+cols_selected = st.multiselect(
     "Seleziona le grandezze",
-    rows,
-    default=rows,
-    key="trend_rows"
+    cols_available,
+    default=cols_available,
+    key="trend_cols"
 )
 
-date_options = list(df_trend.columns)
+index_options = list(df_trend.index)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox(
-    "Data iniziale",
-    date_options,
-    index=0,
-    key="trend_start"
-)
-
+start = c1.selectbox("Data iniziale", index_options, index=0, key="trend_start")
 end = c2.selectbox(
     "Data finale",
-    date_options,
-    index=len(date_options) - 1,
+    index_options,
+    index=len(index_options) - 1,
     key="trend_end"
 )
 
-cols = [
-    c for c in date_options
-    if date_options.index(start) <= date_options.index(c) <= date_options.index(end)
+df_filt = df_trend.loc[
+    index_options[index_options.index(start): index_options.index(end) + 1]
 ]
 
-if selected and cols:
-    plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
+if cols_selected and not df_filt.empty:
+    plot_interactive(df_filt, cols_selected, trend_type)
 
 # =====================================================
 # GRAFICO 3 - ALM
@@ -214,13 +195,7 @@ index_options = list(df_alm.index)
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox(
-    "Data iniziale",
-    index_options,
-    index=0,
-    key="alm_start"
-)
-
+start = c1.selectbox("Data iniziale", index_options, index=0, key="alm_start")
 end = c2.selectbox(
     "Data finale",
     index_options,
