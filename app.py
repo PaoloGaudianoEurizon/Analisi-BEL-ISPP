@@ -1,3 +1,5 @@
+##NEW_CODICE FINALE
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -43,6 +45,9 @@ def load_bel_tables():
         header=None
     )
 
+    # === DATE NELLA RIGA 3 (index 2) ===
+    bel_dates = pd.to_datetime(df_raw.iloc[2], errors="coerce")
+
     def split_tables(df):
         tables, start = [], None
         for i in range(len(df)):
@@ -55,15 +60,27 @@ def load_bel_tables():
             tables.append(df.iloc[start:])
         return tables
 
-    def prepare(df):
+    def prepare(df, dates):
         df = df.copy().reset_index(drop=True)
-        df.columns = df.iloc[1]
-        df = df.iloc[2:]
+
+        # colonne = date
+        df.columns = dates
+
+        # rimuove intestazioni + riga date
+        df = df.iloc[3:]
+
+        # prima colonna = nomi grandezze
         df = df.set_index(df.columns[0])
+
         return df.apply(pd.to_numeric, errors="coerce")
 
     t1, t2, t3 = split_tables(df_raw)
-    return prepare(t1), prepare(t2), prepare(t3)
+
+    return (
+        prepare(t1, bel_dates),
+        prepare(t2, bel_dates),
+        prepare(t3, bel_dates)
+    )
 
 @st.cache_data
 def load_alm():
@@ -82,7 +99,11 @@ df_alm = load_alm()
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
     df_plot["Data"] = df_plot.index
-    df_long = df_plot.melt(id_vars="Data", var_name="Grandezza", value_name="Valore")
+    df_long = df_plot.melt(
+        id_vars="Data",
+        var_name="Grandezza",
+        value_name="Valore"
+    )
 
     fig = px.line(
         df_long,
@@ -102,22 +123,20 @@ def plot_interactive(df, selected, title, select_rows=False):
 st.subheader("📌 BEL")
 
 rows = [r for r in BEL_ROWS if r in table_1.index]
-selected = st.multiselect("Seleziona le grandezze", rows, default=rows)
+selected = st.multiselect(
+    "Seleziona le grandezze",
+    rows,
+    default=rows
+)
 
-dates = pd.to_datetime(table_1.columns, errors="coerce").dropna()
+dates = table_1.columns.dropna()
 
-if not dates.empty:
-    st.markdown("**Seleziona il periodo di riferimento**")
-    c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", dates.min().date(), key="bel_start")
-    end = c2.date_input("Data finale", dates.max().date(), key="bel_end")
+st.markdown("**Seleziona il periodo di riferimento**")
+c1, c2 = st.columns(2)
+start = c1.date_input("Data iniziale", dates.min().date(), key="bel_start")
+end = c2.date_input("Data finale", dates.max().date(), key="bel_end")
 
-    cols = [
-        c for c in table_1.columns
-        if start <= pd.to_datetime(c, errors="coerce").date() <= end
-    ]
-else:
-    cols = table_1.columns
+cols = [c for c in table_1.columns if start <= c.date() <= end]
 
 if selected:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
@@ -135,22 +154,21 @@ trend_type = st.selectbox(
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
 rows = [r for r in VAR_ROWS if r in df_trend.index]
-selected = st.multiselect("Seleziona le grandezze", rows, default=rows, key="trend_rows")
+selected = st.multiselect(
+    "Seleziona le grandezze",
+    rows,
+    default=rows,
+    key="trend_rows"
+)
 
-dates = pd.to_datetime(df_trend.columns, errors="coerce").dropna()
+dates = df_trend.columns.dropna()
 
-if not dates.empty:
-    st.markdown("**Seleziona il periodo di riferimento**")
-    c1, c2 = st.columns(2)
-    start = c1.date_input("Data iniziale", dates.min().date(), key="trend_start")
-    end = c2.date_input("Data finale", dates.max().date(), key="trend_end")
+st.markdown("**Seleziona il periodo di riferimento**")
+c1, c2 = st.columns(2)
+start = c1.date_input("Data iniziale", dates.min().date(), key="trend_start")
+end = c2.date_input("Data finale", dates.max().date(), key="trend_end")
 
-    cols = [
-        c for c in df_trend.columns
-        if start <= pd.to_datetime(c, errors="coerce").date() <= end
-    ]
-else:
-    cols = df_trend.columns
+cols = [c for c in df_trend.columns if start <= c.date() <= end]
 
 if selected:
     plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
@@ -176,14 +194,5 @@ end = c2.date_input("Data finale", dates.max().date(), key="alm_end")
 
 df_alm_f = df_alm.loc[start:end]
 
-if cols:
-    last = df_alm_f.iloc[-1]
-    opt = last["Duration Liabilities"] * (1 - last["Surplus Asset %"])
-
-    if st.button("Ottimizzazione Duration Asset"):
-        st.info(
-            f"Valore ottimale che annulla il mismatch all'ultimo mese di riferimento: "
-            f"**{duration_asset_opt:.2f}** "
-            f"(rispetto al dato attuale di **{duration_asset_current:.2f}**)"
-
+if cols and not df_alm_f.empty:
     plot_interactive(df_alm_f, cols, "Duration Trend")
