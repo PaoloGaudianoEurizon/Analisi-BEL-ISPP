@@ -43,7 +43,6 @@ def load_bel_tables():
         header=None
     )
 
-    # === DATE NELLA RIGA 3 (index 2) ===
     bel_dates = pd.to_datetime(df_raw.iloc[2], errors="coerce")
 
     def split_tables(df):
@@ -60,16 +59,9 @@ def load_bel_tables():
 
     def prepare(df, dates):
         df = df.copy().reset_index(drop=True)
-
-        # colonne = date
         df.columns = dates
-
-        # rimuove intestazioni + riga date
         df = df.iloc[3:]
-
-        # prima colonna = nomi grandezze
         df = df.set_index(df.columns[0])
-
         return df.apply(pd.to_numeric, errors="coerce")
 
     t1, t2, t3 = split_tables(df_raw)
@@ -97,6 +89,7 @@ df_alm = load_alm()
 def plot_interactive(df, selected, title, select_rows=False):
     df_plot = df.loc[selected].T if select_rows else df[selected]
     df_plot["Data"] = df_plot.index
+
     df_long = df_plot.melt(
         id_vars="Data",
         var_name="Grandezza",
@@ -128,15 +121,28 @@ selected = st.multiselect(
 )
 
 dates = table_1.columns.dropna()
+date_options = sorted(dates)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", dates.min().date(), key="bel_start")
-end = c2.date_input("Data finale", dates.max().date(), key="bel_end")
 
-cols = [c for c in table_1.columns if start <= c.date() <= end]
+start = c1.selectbox(
+    "Data iniziale",
+    date_options,
+    index=0,
+    key="bel_start"
+)
 
-if selected:
+end = c2.selectbox(
+    "Data finale",
+    date_options,
+    index=len(date_options) - 1,
+    key="bel_end"
+)
+
+cols = [c for c in date_options if start <= c <= end]
+
+if selected and cols:
     plot_interactive(table_1[cols], selected, "BEL", select_rows=True)
 
 # =====================================================
@@ -151,6 +157,7 @@ trend_type = st.selectbox(
 )
 
 df_trend = table_2 if trend_type == "Monetary Trend BEL" else table_3
+
 rows = [r for r in VAR_ROWS if r in df_trend.index]
 selected = st.multiselect(
     "Seleziona le grandezze",
@@ -160,15 +167,28 @@ selected = st.multiselect(
 )
 
 dates = df_trend.columns.dropna()
+date_options = sorted(dates)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", dates.min().date(), key="trend_start")
-end = c2.date_input("Data finale", dates.max().date(), key="trend_end")
 
-cols = [c for c in df_trend.columns if start <= c.date() <= end]
+start = c1.selectbox(
+    "Data iniziale",
+    date_options,
+    index=0,
+    key="trend_start"
+)
 
-if selected:
+end = c2.selectbox(
+    "Data finale",
+    date_options,
+    index=len(date_options) - 1,
+    key="trend_end"
+)
+
+cols = [c for c in date_options if start <= c <= end]
+
+if selected and cols:
     plot_interactive(df_trend[cols], selected, trend_type, select_rows=True)
 
 # =====================================================
@@ -177,20 +197,33 @@ if selected:
 st.divider()
 st.subheader("📌 Analisi ALM")
 
-cols = st.multiselect(
+cols_selected = st.multiselect(
     "Seleziona le grandezze",
     df_alm.columns.tolist(),
     default=df_alm.columns.tolist()
 )
 
 dates = df_alm.index.dropna()
+date_options = sorted(dates)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
-start = c1.date_input("Data iniziale", dates.min().date(), key="alm_start")
-end = c2.date_input("Data finale", dates.max().date(), key="alm_end")
+
+start = c1.selectbox(
+    "Data iniziale",
+    date_options,
+    index=0,
+    key="alm_start"
+)
+
+end = c2.selectbox(
+    "Data finale",
+    date_options,
+    index=len(date_options) - 1,
+    key="alm_end"
+)
 
 df_alm_f = df_alm.loc[start:end]
 
-if cols and not df_alm_f.empty:
-    plot_interactive(df_alm_f, cols, "Duration Trend")
+if cols_selected and not df_alm_f.empty:
+    plot_interactive(df_alm_f, cols_selected, "Duration Trend")
