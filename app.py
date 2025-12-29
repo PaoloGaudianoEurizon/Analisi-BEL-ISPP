@@ -6,7 +6,7 @@ import plotly.express as px
 # STREAMLIT CONFIG
 # =====================================================
 st.set_page_config(page_title="BEL & ALM Analysis", layout="wide")
-st.title("📊 BEL and ALM Analysis ADDIO")
+st.title("📊 BEL and ALM Analysis ADDIO___")
 
 # =====================================================
 # CONSTANTS
@@ -29,7 +29,7 @@ VAR_ROWS = [
     "Δ Stress Up"
 ]
 
-file_name = "Summary.xlsx"
+file_name = "Summary.xlsxy"
 
 # =====================================================
 # LOAD DATA
@@ -250,4 +250,5 @@ if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
 
 A = 1
+
 
