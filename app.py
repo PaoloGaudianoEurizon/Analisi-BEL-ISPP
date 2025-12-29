@@ -104,7 +104,6 @@ def plot_interactive(df, title):
 
 # =====================================================
 # GRAPH 1 - BEL
-# (time axis = columns of table_1)
 # =====================================================
 st.subheader("📌 BEL")
 
@@ -121,8 +120,8 @@ index_options = list(table_1.columns)
 st.markdown("**Select reference period**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox("Start date", index_options, index=0)
-end = c2.selectbox("End date", index_options, index=len(index_options) - 1)
+start = c1.selectbox("Start period", index_options, index=0)
+end = c2.selectbox("End period", index_options, index=len(index_options) - 1)
 
 cols = index_options[
     index_options.index(start): index_options.index(end) + 1
@@ -134,7 +133,6 @@ if selected and cols:
 
 # =====================================================
 # GRAPH 2 - BEL VARIATION
-# (time axis = columns of table_2 / table_3)
 # =====================================================
 st.divider()
 st.subheader("📌 BEL Variation")
@@ -161,13 +159,13 @@ st.markdown("**Select reference period**")
 c1, c2 = st.columns(2)
 
 start = c1.selectbox(
-    "Start date",
+    "Start period",
     index_options,
     index=0,
     key="trend_start"
 )
 end = c2.selectbox(
-    "End date",
+    "End period",
     index_options,
     index=len(index_options) - 1,
     key="trend_end"
@@ -199,13 +197,13 @@ st.markdown("**Select reference period**")
 c1, c2 = st.columns(2)
 
 alm_start = c1.selectbox(
-    "Start date",
+    "Start period",
     alm_index_options,
     index=0,
     key="alm_start"
 )
 alm_end = c2.selectbox(
-    "End date",
+    "End period",
     alm_index_options,
     index=len(alm_index_options) - 1,
     key="alm_end"
@@ -238,6 +236,3 @@ if not df_alm_f.empty:
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
-
-
-
