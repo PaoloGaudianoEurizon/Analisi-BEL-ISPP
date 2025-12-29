@@ -39,7 +39,7 @@ def load_bel_tables():
     df_raw = pd.read_excel(
         file_name,
         sheet_name="Analisi BEL Aggregate",
-        usecols="B:N",
+        #usecols="B:N",
         header=None
     )
 
@@ -78,6 +78,18 @@ def load_alm():
     return df.apply(pd.to_numeric, errors="coerce")
 
 table_1, table_2, table_3 = load_bel_tables()
+
+# =====================================================
+# REMOVE COLUMNS WITH NaN INDEX
+# =====================================================
+def drop_nan_index_cols(df):
+    return df.loc[:, df.index.notna()] if df.index.dtype != object else df
+
+# Se l’indice è numerico o datetime, non servirebbe; qui eliminiamo solo colonne con NaN nell’indice
+table_1 = table_1.loc[:, table_1.columns.notna()]
+table_2 = table_2.loc[:, table_2.columns.notna()]
+table_3 = table_3.loc[:, table_3.columns.notna()]
+
 df_alm = load_alm()
 
 # =====================================================
@@ -236,5 +248,4 @@ if not df_alm_f.empty:
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
-
 
