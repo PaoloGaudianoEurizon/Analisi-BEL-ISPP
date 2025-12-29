@@ -43,8 +43,6 @@ def load_bel_tables():
         header=None
     )
 
-    bel_cols = df_raw.iloc[2]
-
     def split_tables(df):
         tables, start = [], None
         for i in range(len(df)):
@@ -57,15 +55,21 @@ def load_bel_tables():
             tables.append(df.iloc[start:])
         return tables
 
-    def prepare(df, cols):
+    def prepare(df):
         df = df.copy().reset_index(drop=True)
-        df.columns = cols
-        df = df.iloc[3:]
-        df = df.set_index(df.columns[0])  # grandezze per riga
+
+        # header della singola tabella
+        header = df.iloc[1]
+        df = df.iloc[2:]
+
+        df.columns = header
+        df = df.set_index(df.columns[0])
+
         return df.apply(pd.to_numeric, errors="coerce")
 
     t1, t2, t3 = split_tables(df_raw)
-    return prepare(t1, bel_cols), prepare(t2, bel_cols), prepare(t3, bel_cols)
+
+    return prepare(t1), prepare(t2), prepare(t3)
 
 @st.cache_data
 def load_alm():
@@ -74,8 +78,10 @@ def load_alm():
         sheet_name="Analisi ALM",
         usecols="A:E"
     )
+
     df = df.dropna(how="all")
-    df = df.set_index(df.columns[0])  # indice temporale corretto
+    df = df.set_index(df.columns[0])
+
     return df.apply(pd.to_numeric, errors="coerce")
 
 table_1, table_2, table_3 = load_bel_tables()
@@ -222,3 +228,4 @@ df_alm_f = df_alm.loc[
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
+
