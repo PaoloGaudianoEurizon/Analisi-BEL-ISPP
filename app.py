@@ -229,14 +229,15 @@ df_alm_f = df_alm.loc[
 
 duration_asset_current = last_row["Duration Asset"]
 
-    if st.button("Ottimizzazione Duration Asset"):
-        st.info(
-            f"Valore ottimale che annulla il mismatch all'ultimo mese di riferimento: "
-            f"**{duration_asset_opt:.2f}** "
-            f"(rispetto al dato attuale di **{duration_asset_current:.2f}**)"
-        )
+if st.button("Ottimizzazione Duration Asset"):
+    st.info(
+        f"Valore ottimale che annulla il mismatch all'ultimo mese di riferimento: "
+        f"**{duration_asset_opt:.2f}** "
+        f"(rispetto al dato attuale di **{duration_asset_current:.2f}**)"
+    )
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
+
 
 
