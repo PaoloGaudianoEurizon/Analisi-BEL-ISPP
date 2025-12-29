@@ -7,7 +7,10 @@ import plotly.express as px
 # =====================================================
 st.set_page_config(page_title="BEL & ALM Analysis", layout="wide")
 st.title("📊 BEL and ALM Analysis")
-st.markdown("**Note: The amount of BEL as of December 2025 has not yet been provided by the insurance company.**")
+st.markdown(
+    "*Note: The BEL amount for December 2025 is currently unavailable, "
+    "as it has not yet been provided by the insurance company.*"
+)
 
 # =====================================================
 # CONSTANTS
@@ -249,6 +252,7 @@ if not df_alm_f.empty:
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
+
 
 
 
