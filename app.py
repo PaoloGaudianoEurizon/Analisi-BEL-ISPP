@@ -193,7 +193,6 @@ if selected and cols:
 
 # =====================================================
 # GRAFICO 3 - ALM
-# (asse temporale = indice di df_alm)
 # =====================================================
 st.divider()
 st.subheader("📌 Analisi ALM")
@@ -204,50 +203,53 @@ cols_selected = st.multiselect(
     default=df_alm.columns.tolist()
 )
 
-index_options = list(df_alm.index)
+alm_index_options = list(df_alm.index)
 
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox(
+alm_start = c1.selectbox(
     "Data iniziale",
-    index_options,
+    alm_index_options,
     index=0,
     key="alm_start"
 )
-end = c2.selectbox(
+alm_end = c2.selectbox(
     "Data finale",
-    index_options,
-    index=len(index_options) - 1,
+    alm_index_options,
+    index=len(alm_index_options) - 1,
     key="alm_end"
 )
 
 df_alm_f = df_alm.loc[
-    index_options[index_options.index(start): index_options.index(end) + 1]
+    alm_index_options[
+        alm_index_options.index(alm_start):
+        alm_index_options.index(alm_end) + 1
+    ]
 ]
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
 
 # =====================================================
-# OTTIMIZZAZIONE DURATION ASSET (NUOVO BLOCCO)
+# OTTIMIZZAZIONE DURATION ASSET
 # =====================================================
 if not df_alm_f.empty:
 
-    last_row = df_alm.loc[end]
+    row_ref = df_alm.loc[alm_end]
 
-    duration_liabilities = last_row["Duration Liabilities"]
-    surplus_asset_pct = last_row["Surplus Asset %"]
+    duration_liabilities = row_ref["Duration Liabilities"]
+    surplus_asset_pct = row_ref["Surplus Asset %"]
 
     duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
-    duration_asset_current = last_row["Duration Asset"]
+    duration_asset_current = row_ref["Duration Asset"]
 
     st.divider()
 
     if st.button("Ottimizzazione Duration Asset"):
         st.info(
             f"Valore ottimale di Duration Asset che annulla il mismatch "
-            f"alla data **{end}**:\n\n"
+            f"alla data **{alm_end}**:\n\n"
             f"**{duration_asset_opt:.2f}**  \n"
             f"(valore attuale: **{duration_asset_current:.2f}**)"
         )
