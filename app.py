@@ -229,8 +229,6 @@ df_alm_f = df_alm.loc[
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
 
-a = 1
-
 
 
 
