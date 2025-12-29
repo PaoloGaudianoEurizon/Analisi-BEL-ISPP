@@ -130,15 +130,13 @@ start = c1.selectbox(
     "Data iniziale",
     date_options,
     index=0,
-    key="bel_start"
-)
+    )
 
 end = c2.selectbox(
     "Data finale",
     date_options,
     index=len(date_options) - 1,
-    key="bel_end"
-)
+    )
 
 cols = [c for c in date_options if start <= c <= end]
 
@@ -227,3 +225,4 @@ df_alm_f = df_alm.loc[start:end]
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f, cols_selected, "Duration Trend")
+
