@@ -61,7 +61,7 @@ def load_bel_tables():
         df = df.copy().reset_index(drop=True)
         df.columns = cols
         df = df.iloc[3:]
-        df = df.set_index(df.columns[0])   # GRANDEZZE = INDICE
+        df = df.set_index(df.columns[0])  # grandezze per riga
         return df.apply(pd.to_numeric, errors="coerce")
 
     t1, t2, t3 = split_tables(df_raw)
@@ -75,7 +75,7 @@ def load_alm():
         usecols="A:E"
     )
     df = df.dropna(how="all")
-    df = df.set_index(df.columns[0])  # INDICE CORRETTO
+    df = df.set_index(df.columns[0])  # indice temporale corretto
     return df.apply(pd.to_numeric, errors="coerce")
 
 table_1, table_2, table_3 = load_bel_tables()
@@ -107,7 +107,8 @@ def plot_interactive(df, title):
     st.plotly_chart(fig, use_container_width=True)
 
 # =====================================================
-# GRAFICO 1 - BEL (INDICI PER RIGA → TRASPOSTO)
+# GRAFICO 1 - BEL
+# (asse temporale = colonne di table_1)
 # =====================================================
 st.subheader("📌 BEL")
 
@@ -136,7 +137,8 @@ if selected and cols:
     plot_interactive(df_plot, "BEL")
 
 # =====================================================
-# GRAFICO 2 - VARIAZIONE BEL (STESSA LOGICA)
+# GRAFICO 2 - VARIAZIONE BEL
+# (asse temporale = colonne di table_2 / table_3)
 # =====================================================
 st.divider()
 st.subheader("📌 Variazione BEL")
@@ -162,7 +164,12 @@ index_options = list(df_trend.columns)
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox("Data iniziale", index_options, index=0, key="trend_start")
+start = c1.selectbox(
+    "Data iniziale",
+    index_options,
+    index=0,
+    key="trend_start"
+)
 end = c2.selectbox(
     "Data finale",
     index_options,
@@ -179,7 +186,8 @@ if selected and cols:
     plot_interactive(df_plot, trend_type)
 
 # =====================================================
-# GRAFICO 3 - ALM (INTOCCATO)
+# GRAFICO 3 - ALM
+# (asse temporale = indice di df_alm)
 # =====================================================
 st.divider()
 st.subheader("📌 Analisi ALM")
@@ -195,7 +203,12 @@ index_options = list(df_alm.index)
 st.markdown("**Seleziona il periodo di riferimento**")
 c1, c2 = st.columns(2)
 
-start = c1.selectbox("Data iniziale", index_options, index=0, key="alm_start")
+start = c1.selectbox(
+    "Data iniziale",
+    index_options,
+    index=0,
+    key="alm_start"
+)
 end = c2.selectbox(
     "Data finale",
     index_options,
