@@ -246,13 +246,25 @@ if not df_alm_f.empty:
 
     st.divider()
 
-    if st.button("Ottimizzazione Duration Asset"):
-        st.info(
-            f"Valore ottimale di Duration Asset che annulla il mismatch "
-            f"alla data **{alm_end}**:\n\n"
-            f"**{duration_asset_opt:.2f}**  \n"
-            f"(valore attuale: **{duration_asset_current:.2f}**)"
-        )
-
+if st.button("Ottimizzazione Duration Asset"):
+    st.markdown(
+        f"""
+        <div style="
+            background-color: #f0f2f6;
+            padding: 16px;
+            border-radius: 6px;
+            border-left: 5px solid #6c757d;
+            font-size: 16px;
+        ">
+            <strong>Valore ottimale di Duration Asset che annulla il mismatch</strong><br>
+            alla data <strong>{alm_end}</strong><br><br>
+            <strong>{duration_asset_opt:.2f}</strong><br>
+            <span style="color:#555;">
+                (valore attuale: <strong>{duration_asset_current:.2f}</strong>)
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
