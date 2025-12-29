@@ -244,10 +244,10 @@ if not df_alm_f.empty:
         st.info(
             f"Valore ottimale di Duration Asset che annulla il mismatch "
             f"alla data **{alm_end}**:\n\n"
-            f"**{duration_asset_opt:.2f}**  \n"
-            f"(valore attuale: **{duration_asset_current:.2f}**)"
+            f"**{duration_asset_opt:.2f}** (rispetto al valore realizzato di: **{duration_asset_current:.2f}**)"
         )
 
 # Ora il grafico viene dopo il bottone
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
+
