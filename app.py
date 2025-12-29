@@ -89,12 +89,12 @@ def plot_interactive(df, title):
     df_long = df_plot.melt(
         id_vars="Periods",
         var_name="Metric",
-        value_name="Value"
+        value_name="Values"
     )
     fig = px.line(
         df_long,
         x="Periods",
-        y="Value",
+        y="Values",
         color="Metric",
         markers=True,
         title=title
@@ -236,4 +236,5 @@ if not df_alm_f.empty:
 
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
+
 
