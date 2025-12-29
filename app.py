@@ -197,26 +197,6 @@ if selected and cols:
 st.divider()
 st.subheader("📌 Analisi ALM")
 
-if not df_alm_f.empty:
-
-    row_ref = df_alm.loc[alm_end]
-
-    duration_liabilities = row_ref["Duration Liabilities"]
-    surplus_asset_pct = row_ref["Surplus Asset %"]
-
-    duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
-    duration_asset_current = row_ref["Duration Asset"]
-
-    st.divider()
-
-    if st.button("Ottimizzazione Duration Asset"):
-        st.info(
-            f"Valore ottimale di Duration Asset che annulla il mismatch "
-            f"alla data **{alm_end}**:\n\n"
-            f"**{duration_asset_opt:.2f}**  \n"
-            f"(valore attuale: **{duration_asset_current:.2f}**)"
-        )
-
 cols_selected = st.multiselect(
     "Seleziona le grandezze",
     df_alm.columns.tolist(),
@@ -248,6 +228,26 @@ df_alm_f = df_alm.loc[
     ]
 ]
 
+if not df_alm_f.empty:
+    # BLOCCO BOTTONE SPOSTATO PRIMA DEL GRAFICO
+    row_ref = df_alm.loc[alm_end]
 
+    duration_liabilities = row_ref["Duration Liabilities"]
+    surplus_asset_pct = row_ref["Surplus Asset %"]
+
+    duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
+    duration_asset_current = row_ref["Duration Asset"]
+
+    st.divider()
+
+    if st.button("Ottimizzazione Duration Asset"):
+        st.info(
+            f"Valore ottimale di Duration Asset che annulla il mismatch "
+            f"alla data **{alm_end}**:\n\n"
+            f"**{duration_asset_opt:.2f}**  \n"
+            f"(valore attuale: **{duration_asset_current:.2f}**)"
+        )
+
+# Ora il grafico viene dopo il bottone
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
