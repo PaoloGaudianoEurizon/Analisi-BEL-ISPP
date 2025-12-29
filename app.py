@@ -229,6 +229,28 @@ df_alm_f = df_alm.loc[
 if cols_selected and not df_alm_f.empty:
     plot_interactive(df_alm_f[cols_selected], "Duration Trend")
 
+# =====================================================
+# OTTIMIZZAZIONE DURATION ASSET (NUOVO BLOCCO)
+# =====================================================
+if not df_alm_f.empty:
+
+    last_row = df_alm.loc[end]
+
+    duration_liabilities = last_row["Duration Liabilities"]
+    surplus_asset_pct = last_row["Surplus Asset %"]
+
+    duration_asset_opt = duration_liabilities * (1 - surplus_asset_pct)
+    duration_asset_current = last_row["Duration Asset"]
+
+    st.divider()
+
+    if st.button("Ottimizzazione Duration Asset"):
+        st.info(
+            f"Valore ottimale di Duration Asset che annulla il mismatch "
+            f"alla data **{end}**:\n\n"
+            f"**{duration_asset_opt:.2f}**  \n"
+            f"(valore attuale: **{duration_asset_current:.2f}**)"
+        )
 
 
 
